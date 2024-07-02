@@ -1,8 +1,7 @@
-#Matching Engine created in 3 days for a technical challenge
+# Matching Engine
+Takes orders through stdin (example orders in [Sample Order List](sample_test_run.txt)) and processes them
 
-Takes orders through standard in (example orders in [Sample Order List](sample_test_run.txt)) and processes them
-
-#Build steps:
+# Build steps
 ```
     mkdir build;  cd build
     cmake ..
@@ -10,7 +9,7 @@ Takes orders through standard in (example orders in [Sample Order List](sample_t
 ```
 
 
-#To run provided sample use:
+# To run provided sample use
 ```
     cat sample_test_run.txt | ./MatchingEngine
 ```
