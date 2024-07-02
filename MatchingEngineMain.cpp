@@ -40,6 +40,9 @@ int main() {
     std::string request;
     // read input from STDIN
     while(std::getline(std::cin, request)) {
+        if(request.empty()) {
+            continue;
+        }
         mEngine.processXchgMsg(request);
     }
     

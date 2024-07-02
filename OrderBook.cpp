@@ -1,115 +1,71 @@
 #include "OrderBook.h"
 
-OrderBook::~OrderBook() {
-    OrderNode* node;
-    OrderNode* next;
-    for(auto& priceList: book) {
-        node = priceList.second.first;
-        while(node != nullptr) {
-            next = node->next;
-            delete node;
-            node = next;
-        }
-    }
-}
-
 // Buy or Sell
-OrderNode* OrderBook::setOrder(BuyOrder& order) {
-    auto iter = book.find(order.price);
-    if(iter == book.end()) {
-        OrderNode* newNode = new OrderNode(std::move(order));
-        book[order.price].first = newNode; // !!! move?
-        book[order.price].second = newNode;
-    } else {
-        OrderNode* newNode = new OrderNode(std::move(order)); // !!! move?
-        //OrderNode* tail = iter->second.second;
-        iter->second.second->next = newNode;
-        iter->second.second->next->prev = iter->second.second;
-        iter->second.second = iter->second.second->next;
-    }
+OrderNode OrderBook::setOrder(BuyOrder& order) {
+    book[order.price].push_back(std::move(order));
     
-    return book[order.price].second;
+    // order is now invalid
+    OrderNode node(--book[order.price].end(), book[order.price].back());
+    
+    return node;
 }
 
-void OrderBook::cancelOrder(OrderNode& node) {
-    auto order = node.order;
-    // check head
-    if(node.prev != nullptr) {
-        node.prev->next = node.next;
-    } else {
-        book[order.price].first = node.next;
+void OrderBook::cancelOrder(const OrderNode& node) {
+    book[node.price].erase(node.iter);    
+    if(book[node.price].empty()) {
+        book.erase(node.price);
     }
-    
-    // check tail
-    if(node.next != nullptr) {
-        node.next->prev = node.prev;
-    } else {
-        book[order.price].second = node.prev;
-
-    }
-    
-    if(book[order.price].first == nullptr) {
-        book.erase(order.price);
-    }
-    
-    delete &node;
 }
 
 void OrderBook::logOrder(std::ostream& logger, const char& delimiter,
-                Price& price, Quantity& quantity) {
+                const Price& price, const Quantity& quantity) {
     logger << price << delimiter << quantity << std::endl;
 }
 
+// !!! keep running record of order counts?
 void OrderBook::printBook(std::ostream& logger, const char& delimiter) {
     Price curPrice = 0;
     Quantity orderCount = 0;
     OrderNode* curOrder = nullptr;
     for(auto priceIter = book.rbegin(); priceIter != book.rend(); ++priceIter) {
-        curOrder = priceIter->second.first; // head of list
-        curPrice = curOrder->order.price;
         orderCount = 0;
-        while(curOrder != nullptr) {
-            orderCount += curOrder->order.quantity;
-            curOrder = curOrder->next;
+        for(auto order: priceIter->second) {
+            orderCount += order.quantity;
         }
-        logOrder(logger, delimiter, curPrice, orderCount);
+        logOrder(logger, delimiter, priceIter->first, orderCount);
     }
 }
 
 BuyOrder& OrderBook::peekHigh(){
-    return book.rbegin()->second.first->order;
+    return book.rbegin()->second.front();
 }
 
 BuyOrder& OrderBook::peekLow(){
-    return book.begin()->second.first->order;
+    return book.begin()->second.front();
 }
 
 void OrderBook::popLow(){
     if(empty()) {
         return;
     }
-    OrderNode* node = book.begin()->second.first;
-    book.begin()->second.first = book.begin()->second.first->next;
-    if(book.begin()->second.first == nullptr) {
-        book.erase(book.begin());
-    } else {
-        book.begin()->second.first->prev = nullptr;
+
+    auto node = book.begin();
+    node->second.pop_front();    
+    if(node->second.empty()) {
+        book.erase(node);
     }
-    delete node;
 }
 
 void OrderBook::popHigh() {
     if(empty()) {
         return;
     }
-    OrderNode* node = book.rbegin()->second.first;
-    book.rbegin()->second.first = book.rbegin()->second.first->next;
-    if(book.rbegin()->second.first == nullptr) {
+    
+    auto node = book.rbegin();
+    node->second.pop_front();
+    if(node->second.empty()) {
         book.erase(--book.end());
-    } else {
-        book.rbegin()->second.first->prev = nullptr;
     }
-    delete node;
 }
 
 bool OrderBook::empty() {

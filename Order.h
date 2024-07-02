@@ -1,4 +1,7 @@
+#pragma once
+
 #include <string>
+#include <list>
 
 enum class Operation {
     Error,
@@ -9,16 +12,16 @@ enum class Operation {
     Print
 };
 
-
 enum class OrderType {
     Undefined,
     IOC,
     GFD  
 };
 
-
+class BuyOrder;
 using Price = uint64_t;
 using Quantity = uint64_t;
+using OrderContainer = std::list<BuyOrder>;
 
 class BaseOrder {
 public:
@@ -48,9 +51,10 @@ using PrintOrder = BaseOrder;
 
 class OrderNode {
 public:
-    BuyOrder order;
-    OrderNode* next = nullptr;
-    OrderNode* prev = nullptr;
+    Price price;
+    OrderContainer::iterator iter;
+    std::string orderId;
     
-    OrderNode(BuyOrder&& o): order(o) {};
+    OrderNode(const OrderContainer::iterator& i, const BuyOrder& bo): price(bo.price), iter(i), orderId(bo.orderId) {};
+    OrderNode(OrderNode&& o) noexcept : price(std::move(o.price)), iter(std::move(o.iter)), orderId(std::move(o.orderId)) {};
 };

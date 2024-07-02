@@ -8,7 +8,7 @@
 class MatchingEngine {
 private:
     // std::hash doesn't guarantee a unique hash value
-    std::multimap<size_t, OrderNode*> hashToNodeMap;
+    std::multimap<size_t, OrderNode> hashToNodeMap;
     OrderBook buyBook;
     OrderBook sellBook;
     OrderParser parser;
@@ -31,7 +31,7 @@ private:
     void tradeOrder(BuyOrder& incomingOrder, BuyOrder& bookOrder);
     void removeHashFromMap(BuyOrder& order);
     void checkSellPriceCross(BuyOrder& incomingOrder);
-    void checkBuyPriceCross(BuyOrder& incomingOrder);
+    void checkBuyPriceCross(SellOrder& incomingOrder);
     void checkPriceCross(BuyOrder& order);
 public:
     MatchingEngine(char delimiter = ' '): DEL_TEXT(delimiter), parser(delimiter){}

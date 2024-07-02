@@ -8,11 +8,7 @@ bool MatchingEngine::getNodeByHash(BaseOrder& matchedOrder, HashToNodeMapIter& l
             break;
         }
         
-        // !!! intermitent crashing in stored order object ID
-        // not able to consistently reproduce, would normally
-        // use GDB to show input but my assumption is that I am corrupting
-        // data somehow         
-        if(listIter->second->order.orderId == matchedOrder.orderId) {
+        if(listIter->second.orderId == matchedOrder.orderId) {
             break;
         }
         
@@ -72,9 +68,9 @@ void MatchingEngine::processOrder(BuyOrder& order) {
     OrderNode* nodePtr;
     if(OrderType::GFD == order.orderType) {
         if(Operation::Buy == order.operation) {
-            nodePtr = buyBook.setOrder(order);
+            hashToNodeMap.insert({order.hashedId, buyBook.setOrder(order)});
         } else {
-            nodePtr = sellBook.setOrder(order);
+            hashToNodeMap.insert({order.hashedId, sellBook.setOrder(order)});
         }
     } else if(OrderType::IOC == order.orderType) {
         // We don't store IOC orders
@@ -82,22 +78,20 @@ void MatchingEngine::processOrder(BuyOrder& order) {
         // log 
         return;
     }
-    hashToNodeMap.insert({order.hashedId, nodePtr});
 }
 
-void MatchineEngine::cancelOrder(CancelOrder& order) {
+void MatchingEngine::cancelOrder(CancelOrder& order) {
     HashToNodeMapIter iter;
     if(!getNodeByHash(order, iter)) {
         return;
     }
     
-    OrderNode* nodePtr = iter->second;
-    hashToNodeMap.erase(iter);
-    if(Operation::Buy == nodePtr->order.operation) {
-        buyBook.cancelOrder(*nodePtr);
+    if(Operation::Buy == order.operation) {
+        buyBook.cancelOrder(iter->second);
     } else {
-        sellBook.cancelOrder(*nodePtr);
+        sellBook.cancelOrder(iter->second);
     }
+    hashToNodeMap.erase(iter);
 }
 
 void MatchingEngine::logTrade(const Quantity& tradeQuantity,
@@ -134,7 +128,7 @@ void MatchingEngine::removeHashFromMap(BuyOrder& order) {
 }
 
 void MatchingEngine::checkSellPriceCross(BuyOrder& incomingOrder){
-    BuyOrder* sellOrder;
+    SellOrder* sellOrder;
     while(incomingOrder.quantity > 0 &&
             !sellBook.empty() &&
             incomingOrder.price >= sellBook.peekLow().price) {
@@ -147,7 +141,7 @@ void MatchingEngine::checkSellPriceCross(BuyOrder& incomingOrder){
     }
 }
 
-void MatchingEngine::checkBuyPriceCross(BuyOrder& incomingOrder) {
+void MatchingEngine::checkBuyPriceCross(SellOrder& incomingOrder) {
     BuyOrder* buyOrder;
     while(incomingOrder.quantity > 0 &&
             !buyBook.empty() &&

@@ -7,17 +7,16 @@
 
 class OrderBook {
 private:
-    //                                            Head      , Tail
-    std::map<decltype(BuyOrder::price), std::pair<OrderNode*, OrderNode*>> book;
+    std::map<decltype(BuyOrder::price), OrderContainer> book;
 
 public:
-    ~OrderBook();
+    using OrderIter = OrderContainer::iterator;
 
     // Buy or Sell
-    OrderNode* setOrder(BuyOrder& order);
-    void cancelOrder(OrderNode& node);
+    OrderNode setOrder(BuyOrder& order);
+    void cancelOrder(const OrderNode& node);
     void logOrder(std::ostream& logger, const char& delimiter,
-                  Price& price, Quantity& quantity);
+                  const Price& price, const Quantity& quantity);
     void printBook(std::ostream& logger, const char& delimiter);
     BuyOrder& peekHigh();
     BuyOrder& peekLow();
